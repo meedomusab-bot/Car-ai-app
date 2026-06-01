@@ -1,23 +1,15 @@
 import streamlit as st
 from ultralytics import YOLO
-from PIL import Image
 
-# تحميل النموذج
+# استخدام نموذج خفيف جداً
 model = YOLO('yolov8n.pt')
 
-st.title("Car Intelligence System 🚗")
+st.title("Car AI App")
 
-uploaded_file = st.file_uploader("ارفع صورة السيارة هنا...", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("ارفع صورة السيارة...", type=["jpg", "png"])
 
 if uploaded_file is not None:
-    image = Image.open(uploaded_file)
-    st.image(image, caption='الصورة الأصلية', use_column_width=True)
-    
-    # الاكتشاف
-    results = model.predict(image)
-    
-    # عرض النتائج
-    st.image(results[0].plot(), caption='تم اكتشاف المركبات بنجاح')
-    
-    st.success("تم تحليل الصورة بنجاح باستخدام YOLOv8")
-    st.info("نصيحة: لقراءة اللوحات بدقة عالية، يُفضل استخدام واجهة API مثل (Google Vision) بدلاً من `easyocr` الثقيلة على السيرفر.")
+    # الاكتشاف مباشرة
+    results = model.predict(uploaded_file)
+    # عرض النتيجة
+    st.image(results[0].plot(), use_column_width=True)
