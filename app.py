@@ -1,13 +1,26 @@
 import streamlit as st
+import numpy as np
+from PIL import Image
+from ultralytics import YOLO
 
-st.title("Car AI App - Testing Mode")
-st.write("إذا رأيت هذه الصفحة، فالسيرفر يعمل الآن بنجاح!")
+# استخدام cache لتقليل استهلاك الذاكرة
+@st.cache_resource
+def get_model():
+    return YOLO('yolov8n.pt')
 
-if st.button("تحميل محرك الذكاء الاصطناعي"):
-    try:
-        from ultralytics import YOLO
-        st.write("جاري تحميل النموذج، يرجى الانتظار...")
-        model = YOLO('yolov8n.pt')
-        st.success("تم تحميل النموذج بنجاح!")
-    except Exception as e:
-        st.error(f"حدث خطأ أثناء التحميل: {e}")
+model = get_model()
+
+st.title("Car Intelligence System 🚗")
+
+uploaded_file = st.file_uploader("ارفع صورة السيارة...", type=["jpg", "jpeg", "png"])
+
+if uploaded_file is not None:
+    image = Image.open(uploaded_file)
+    st.image(image, caption='الصورة الأصلية', use_column_width=True)
+    
+    # تنفيذ الكشف
+    results = model.predict(image)
+    
+    # عرض النتيجة
+    res_plotted = results[0].plot()
+    st.image(res_plotted, caption='النتائج', use_column_width=True)
