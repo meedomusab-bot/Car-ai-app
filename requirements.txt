@@ -5,3 +5,5 @@ easyocr
 torch
 torchvision
 Pillow
+text
+numpy
