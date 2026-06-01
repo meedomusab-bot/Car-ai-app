@@ -1,35 +1,49 @@
 import streamlit as st
 from ultralytics import YOLO
 from PIL import Image
+import easyocr
 
-# تحميل النموذج
-model = YOLO('yolov8n.pt')
+# تحميل النماذج
+@st.cache_resource # لزيادة سرعة التطبيق
+def load_models():
+    model = YOLO('yolov8n.pt')
+    reader = easyocr.Reader(['en'])
+    return model, reader
 
-st.title("Car Detection App - Pro")
+model, reader = load_models()
 
-# شريط جانبي للتحكم
-confidence = st.sidebar.slider("Confidence Threshold", 0.0, 1.0, 0.5)
+st.title("Car Intelligence System 🚗")
 
-uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("ارفع صورة السيارة هنا...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
-    st.image(image, caption='Original Image', use_column_width=True)
+    st.image(image, caption='الصورة الأصلية', use_column_width=True)
     
-    # إجراء التحليل
-    results = model.predict(image, conf=confidence)
+    # الاكتشاف
+    results = model.predict(image)
     
-    # حساب عدد المركبات (سيارة، حافلة، شاحنة)
-    # أرقام الفئات في YOLO هي: 2: سيارة، 5: حافلة، 7: شاحنة
-    vehicle_classes = [2, 5, 7] 
-    car_count = 0
+    # معالجة كل سيارة مكتشفة
     for box in results[0].boxes:
-        if int(box.cls) in vehicle_classes:
-            car_count += 1
+        if int(box.cls) in [2, 5, 7]: # مركبات
+            # 1. قص السيارة
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
+            car_crop = image.crop((x1, y1, x2, y2))
             
-    # عرض النتيجة
-    st.success(f"تم اكتشاف {car_count} مركبة في الصورة!")
-    
-    # عرض الصورة بالنتائج
-    res_plotted = results[0].plot()
-    st.image(res_plotted, caption='Detected Image', use_column_width=True)
+            # 2. قراءة اللوحة (OCR)
+            text_results = reader.readtext(car_crop)
+            
+            # عرض النتائج
+            st.write("---")
+            st.image(car_crop, caption="المركبة المكتشفة")
+            
+            found_text = False
+            for (bbox, text, prob) in text_results:
+                if prob > 0.2:
+                    st.success(f"رقم اللوحة المكتشف: {text}")
+                    found_text = True
+            
+            if not found_text:
+                st.warning("لم يتم العثور على لوحة واضحة.")
+
+    st.image(results[0].plot(), caption='النتائج على الصورة')
